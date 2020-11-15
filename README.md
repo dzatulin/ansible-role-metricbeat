@@ -1,4 +1,4 @@
-#Ansible Role: Metricbeat
+##Ansible Role: Metricbeat
 Role for installing and configuring Metricbeat on the Elastic Stack
 ## Requirements
 Ansible version: 2.9
