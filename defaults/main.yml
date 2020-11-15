@@ -1,0 +1,32 @@
+---
+metricbeat_version: 7.9.2
+metricbeat_create_config: true
+
+#metricbeat_kibana_hosts: localhost:5601
+
+#metricbeat_output_elasticsearch_enabled: true
+#metricbeat_output_elasticsearch_hosts:
+#  - "localhost:9200"
+#metricbeat_username: elastic
+#metricbeat_password: []
+
+metricbeat_output_logstash_enabled: false
+metricbeat_output_logstash_hosts:
+  - "localhost:5044"
+
+metricbeat_enable_logging: true
+metricbeat_log_level: warning
+metricbeat_log_dir: /var/log/metricbeat
+metricbeat_log_filename: metricbeat.log
+
+metricbeat_redis_plugin: true
+metricbeat_redis_host: localhost:6379
+metricbeat_redis_password: []
+
+metricbeat_nginx_plugin: false
+metricbeat_nginx_host: http://127.0.0.1
+
+metricbeat_ssl_dir: /etc/pki/logstash
+metricbeat_ssl_certificate_file: ""
+metricbeat_ssl_key_file: ""
+metricbeat_ssl_insecure: "false"

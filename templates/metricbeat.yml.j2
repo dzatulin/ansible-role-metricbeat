@@ -1,0 +1,237 @@
+###################### Metricbeat Configuration Example #######################
+
+# This file is an example configuration file highlighting only the most common
+# options. The metricbeat.reference.yml file from the same directory contains all the
+# supported options with more comments. You can use it as a reference.
+#
+# You can find the full configuration reference here:
+# https://www.elastic.co/guide/en/beats/metricbeat/index.html
+
+#==========================  Modules configuration ============================
+
+metricbeat.config.modules:
+  # Glob pattern for configuration loading
+  path: ${path.config}/modules.d/*.yml
+
+  # Set to true to enable config reloading
+  reload.enabled: false
+
+  # Period on which files under path should be checked for changes
+  #reload.period: 10s
+
+#==================== Elasticsearch template setting ==========================
+
+setup.template.settings:
+  index.number_of_shards: 1
+  index.codec: best_compression
+  #_source.enabled: false
+
+#================================ General =====================================
+
+# The name of the shipper that publishes the network data. It can be used to group
+# all the transactions sent by a single shipper in the web interface.
+#name:
+
+# The tags of the shipper are included in their own field with each
+# transaction published.
+#tags: ["service-X", "web-tier"]
+
+# Optional fields that you can specify to add additional information to the
+# output.
+#fields:
+#  env: staging
+
+
+#============================== Dashboards =====================================
+# These settings control loading the sample dashboards to the Kibana index. Loading
+# the dashboards is disabled by default and can be enabled either by setting the
+# options here or by using the `setup` command.
+#setup.dashboards.enabled: false
+
+# The URL from where to download the dashboards archive. By default this URL
+# has a value which is computed based on the Beat name and version. For released
+# versions, this URL points to the dashboard archive on the artifacts.elastic.co
+# website.
+#setup.dashboards.url:
+
+#============================== Kibana =====================================
+
+# Starting with Beats version 6.0.0, the dashboards are loaded via the Kibana API.
+# This requires a Kibana endpoint configuration.
+setup.kibana:
+
+  # Kibana Host
+  # Scheme and port can be left out and will be set to the default (http and 5601)
+  # In case you specify and additional path, the scheme is required: http://localhost:5601/path
+  # IPv6 addresses should always be defined as: https://[2001:db8::1]:5601
+  host: "{{ metricbeat_kibana_hosts }}"
+
+  # Kibana Space ID
+  # ID of the Kibana Space into which the dashboards should be loaded. By default,
+  # the Default Space will be used.
+  #space.id:
+
+#============================= Elastic Cloud ==================================
+
+# These settings simplify using Metricbeat with the Elastic Cloud (https://cloud.elastic.co/).
+
+# The cloud.id setting overwrites the `output.elasticsearch.hosts` and
+# `setup.kibana.host` options.
+# You can find the `cloud.id` in the Elastic Cloud web UI.
+#cloud.id:
+
+# The cloud.auth setting overwrites the `output.elasticsearch.username` and
+# `output.elasticsearch.password` settings. The format is `<user>:<pass>`.
+#cloud.auth:
+
+#================================ Outputs =====================================
+
+# Configure what output to use when sending the data collected by the beat.
+
+
+#-------------------------- Elasticsearch output ------------------------------
+output:
+{% if metricbeat_output_elasticsearch_enabled %}
+  elasticsearch:
+    # Array of hosts to connect to.
+    hosts: {{ metricbeat_output_elasticsearch_hosts | to_json }}
+
+    # Protocol - either `http` (default) or `https`.
+    #protocol: "https"
+
+    # Authentication credentials - either API key or username/password.
+    #api_key: "id:api_key"
+    username: "{{ metricbeat_username }}"
+    password: "{{ metricbeat_password }}"
+
+{% if metricbeat_ssl_certificate_file and metricbeat_ssl_key_file %}
+    # ssl configuration. By default is off.
+    ssl:
+      # List of root certificates for HTTPS server verifications
+      certificate_authorities: ["{{ metricbeat_ssl_dir }}/{{ metricbeat_ssl_certificate_file | basename }}"]
+
+      # Certificate for TLS client authentication
+      certificate: "{{ metricbeat_ssl_dir }}/{{ metricbeat_ssl_certificate_file | basename }}"
+
+      # Client Certificate Key
+      key: "{{ metricbeat_ssl_dir }}/{{ metricbeat_ssl_key_file | basename}}"
+
+      # Controls whether the client verifies server certificates and host name.
+      # If insecure is set to true, all server host names and certificates will be
+      # accepted. In this mode TLS based connections are susceptible to
+      # man-in-the-middle attacks. Use only for testing.
+      insecure: {{ metricbeat_ssl_insecure }}
+
+      # Configure cipher suites to be used for TLS connections
+      #cipher_suites: []
+
+      # Configure curve types for ECDHE based cipher suites
+      #curve_types: []
+
+      # Configure minimum TLS version allowed for connection to logstash
+      #min_version: 1.0
+
+      # Configure maximum TLS version allowed for connection to logstash
+      #max_version: 1.2
+{% endif %}
+
+
+#================================ Processors =====================================
+
+# Configure processors to enhance or manipulate events generated by the beat.
+
+processors:
+  - add_host_metadata: ~
+  - add_cloud_metadata: ~
+  - add_docker_metadata: ~
+  - add_kubernetes_metadata: ~
+
+{% if metricbeat_enable_logging %}
+#================================ Logging =====================================
+logging:
+  ### Filebeat log
+  level: {{ metricbeat_log_level }}
+
+  # Enable file rotation with default configuration
+  to_files: true
+
+  # Do not log to syslog
+  to_syslog: false
+
+  files:
+    path: {{ metricbeat_log_dir }}
+    name: {{ metricbeat_log_filename }}
+    keepfiles: 7
+{% endif %}
+{% endif %}
+
+{% if metricbeat_output_logstash_enabled %}
+  ### Logstash as output
+  logstash:
+    # The Logstash hosts
+    hosts: {{ metricbeat_output_logstash_hosts | to_json }}
+
+    # Number of workers per Logstash host.
+    #worker: 1
+
+    # Optional load balance the events between the Logstash hosts
+    #loadbalance: true
+
+    # Optional index name. The default index name depends on the each beat.
+    # For Packetbeat, the default is set to packetbeat, for Topbeat
+    # top topbeat and for Filebeat to metricbeat.
+    #index: metricbeat
+
+{% if metricbeat_ssl_certificate_file and metricbeat_ssl_key_file %}
+    # ssl configuration. By default is off.
+    ssl:
+      # List of root certificates for HTTPS server verifications
+      certificate_authorities: ["{{ metricbeat_ssl_dir }}/{{ metricbeat_ssl_certificate_file | basename }}"]
+
+      # Certificate for TLS client authentication
+      certificate: "{{ metricbeat_ssl_dir }}/{{ metricbeat_ssl_certificate_file | basename }}"
+
+      # Client Certificate Key
+      key: "{{ metricbeat_ssl_dir }}/{{ metricbeat_ssl_key_file | basename}}"
+
+      # Controls whether the client verifies server certificates and host name.
+      # If insecure is set to true, all server host names and certificates will be
+      # accepted. In this mode TLS based connections are susceptible to
+      # man-in-the-middle attacks. Use only for testing.
+      insecure: {{ metricbeat_ssl_insecure }}
+
+      # Configure cipher suites to be used for TLS connections
+      #cipher_suites: []
+
+      # Configure curve types for ECDHE based cipher suites
+      #curve_types: []
+{% endif %}
+{% endif %}
+
+#============================== X-Pack Monitoring ===============================
+# metricbeat can export internal metrics to a central Elasticsearch monitoring
+# cluster.  This requires xpack monitoring to be enabled in Elasticsearch.  The
+# reporting is disabled by default.
+
+# Set to true to enable the monitoring reporter.
+#monitoring.enabled: false
+
+# Sets the UUID of the Elasticsearch cluster under which monitoring data for this
+# Metricbeat instance will appear in the Stack Monitoring UI. If output.elasticsearch
+# is enabled, the UUID is derived from the Elasticsearch cluster referenced by output.elasticsearch.
+#monitoring.cluster_uuid:
+
+# Uncomment to send the metrics to Elasticsearch. Most settings from the
+# Elasticsearch output are accepted here as well.
+# Note that the settings should point to your Elasticsearch *monitoring* cluster.
+# Any setting that is not set is automatically inherited from the Elasticsearch
+# output configuration, so if you have the Elasticsearch output configured such
+# that it is pointing to your Elasticsearch monitoring cluster, you can simply
+# uncomment the following line.
+#monitoring.elasticsearch:
+
+#================================= Migration ==================================
+
+# This allows to enable 6.7 migration aliases
+#migration.6_to_7.enabled: true
+

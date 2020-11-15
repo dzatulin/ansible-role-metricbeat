@@ -1,0 +1,78 @@
+---
+- name: Copy Filebeat configuration.
+  template:
+    src: metricbeat.yml.j2
+    dest: "/etc/metricbeat/metricbeat.yml"
+    owner: root
+    group: root
+    mode: 0644
+  notify: restart metricbeat
+
+- name: Copy System plugin.
+  template:
+    src: system.yml.j2
+    dest: "/etc/metricbeat/modules.d/system.yml"
+    owner: root
+    group: root
+    mode: 0644
+  notify: restart metricbeat
+
+- name: Copy Redis plugin.
+  template:
+    src: redis.yml.j2
+    dest: "/etc/metricbeat/modules.d/redis.yml"
+    owner: root
+    group: root
+    mode: 0644
+  notify: restart metricbeat
+  when: metricbeat_redis_plugin | default(false)
+
+- name: Copy Nginx plugin.
+  template:
+    src: nginx.yml.j2
+    dest: "/etc/metricbeat/modules.d/nginx.yml"
+    owner: root
+    group: root
+    mode: 0644
+  notify: restart metricbeat
+  when: metricbeat_nginx_plugin | default(false)
+
+- name: сreate log directory
+  file:
+    path: /var/log/metricbeat
+    mode: 0700
+    owner: root
+    group: root
+    state: directory
+  notify: restart metricbeat
+  when: metricbeat_enable_logging | default(false)
+
+- name: сreate log file
+  file:
+    path: /var/log/metricbeat/metricbeat.log
+    owner: root
+    group: root
+    mode: '0600'  
+    state: touch
+  notify: restart metricbeat
+  when: metricbeat_enable_logging | default(false)
+
+- name: Ensure Filebeat SSL key pair directory exists.
+  file:
+    path: "{{ metricbeat_ssl_dir }}"
+    state: directory
+    mode: 0755
+  when: metricbeat_ssl_key_file | default(false)
+
+- name: Copy SSL key and cert for metricbeat.
+  copy:
+    src: "{{ item }}"
+    dest: "{{ metricbeat_ssl_dir }}/{{ item | basename }}"
+    mode: 0644
+  with_items:
+    - "{{ metricbeat_ssl_key_file }}"
+    - "{{ metricbeat_ssl_certificate_file }}"
+  notify: restart metricbeat
+  when:
+    - metricbeat_ssl_key_file | default(false)
+    - metricbeat_ssl_certificate_file | default(false)
